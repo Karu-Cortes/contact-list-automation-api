@@ -1,0 +1,14 @@
+{
+  "nombre": "Blass",
+  "tipo": "cautivo",
+  "edad": 3,
+  "peso": 42.3,
+  "genero": "hermafrodita",
+  "amo": {
+    "nombre": "Dovie",
+    "apellido": "McLaughlin",
+    "correo": "Dovie_McLaughlin42@hotmail.com",
+    "edad": 52,
+    "pais": "Paraguay"
+  }
+}
