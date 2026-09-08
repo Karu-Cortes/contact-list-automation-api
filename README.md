@@ -21,7 +21,6 @@ src                                                 |
             + utilities                             | 
                 + CustomRequestSpecification.java   | Clase para la configuracion de la peticion
                 + EnvironmentValuesTask.java        | Clase para obtener las variables de entorno
-                + RequestSignerAWS.java             | Clase para firmar la peticion con AWS Lambda URL
   + test                                            | Source test
     + java                                          | 
         + co.com.bdb.automation                     |
@@ -65,23 +64,23 @@ sonar-project-custom.properties                     | Propiedades generales de S
 ## Configurar proyecto:
 
 - Primero cree un archivo **.env** en la raiz del proyecto y agregue las variables de entorno necesarias para la ejecucion de los test. No olvide actualizar tambien el archivo **.env.example** con las variables de entorno necesarias pero sin sus valores.
-- Luego ejecute el comando `./mvnw install` para instalar las dependencias del proyecto.
+- Luego ejecute el comando `mvn install` para instalar las dependencias del proyecto.
 
 ## Comandos:
-- Para ejecutar los test: `./mvnw verify`
-- Para instalar dependencias: `./mvnw install`
-- Para limpiar el proyecto: `./mvnw clean`
+- Para ejecutar los test: `mvn verify`
+- Para ejecutar los test limpiando recursos generados anteriores: `mvn clean verify`
+- Para instalar dependencias: `mvn install`
+- Para limpiar el proyecto: `mvn clean`
+- Para generar resultados de Allure: `mvn clean verify`
+- Para generar el reporte HTML de Allure: `mvn allure:report`
+- Para abrir el reporte de Allure en un servidor local: `mvn allure:serve`
+
+`target/allure-results` contiene los archivos JSON generados por las pruebas. El reporte visual se genera en `target/site/allure-maven-plugin/index.html`.
+Las peticiones hechas con Rest Assured se adjuntan al reporte en cada step como `Request` y `HTTP/1.1 ...`, incluyendo body, headers y respuesta de la API.
 
 ## Consejos y recomendaciones:
 - En la ruta src/test/java/co/com/bdb/automation/pojos agregue una clase POJO por cada recurso que va a probar, en esta clase agregue los atributos del cuerpo (body) y/o cabeceras (headers) que va a usar en el test.
 - En la ruta src/test/resources/features agregue una carpeta por cada recurso que va a probar, en esta carpeta agregue los archivos de definicion de los escenarios en formato Gherkin.
 - En la ruta src/test/resources/schemas agregue una carpeta por cada recurso que va a probar, en esta carpeta agregue los archivos de definicion del esquema JSON que va a validar en el test.
-- Si desea modificar el tag de cucumber que se esta usando, hagalo en el archivo **junit-platform.properties** o agregue en el comando `./mvnw verify` el flag `-Dcucumber.filter.tags="@tag"`.
+- Si desea modificar el tag de cucumber que se esta usando, hagalo en el archivo **junit-platform.properties** o agregue en el comando `mvn verify` el flag `-Dcucumber.filter.tags="@tag"`.
 - Asegurese de almacenar los datos sensibles como API KEYS, TOKENS, etc, en variables de entorno en el archivo **.env**.
-
-## Para usar Lambda Bridge:
-- En el archivo **.env** agregue la variable `ENDPOINT_LAMBDA` con la url del servicio de Lambda Bridge.
-- En el metodo que envia la peticion, agregue el metodo sendWithLambda(), por ejemplo `request.when().sendWithLambda().post()`.
-
-> [!NOTE]
-> Si va a usar lambda bridge en local, importe las credenciales AWS_SESSION_TOKEN, AWS_SECRET_ACCESS_KEY y AWS_ACCESS_KEY_ID de su usuario en la cuenta de AWS correspondiente al archivo .env.
