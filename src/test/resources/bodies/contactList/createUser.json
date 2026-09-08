@@ -1,0 +1,6 @@
+{
+  "firstName": "Prueba",
+  "lastName": "Automation",
+  "email": "{{email}}",
+  "password": "prueba123456"
+}
