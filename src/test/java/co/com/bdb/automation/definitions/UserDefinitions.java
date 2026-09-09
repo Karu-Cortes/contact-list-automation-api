@@ -14,8 +14,6 @@ import io.restassured.path.json.JsonPath;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,27 +38,22 @@ public class UserDefinitions {
 
     @Given("que tengo un body válido para crear usuario")
     public void queTengoUnBodyValidoParaCrearUsuario() throws IOException {
-        baseTest.setEmail("automation+" + UUID.randomUUID() + "@mail.com");
-
-        String body = Files.readString(Path.of(CREATE_USER_BODY_PATH))
-                .replace("{{email}}", baseTest.getEmail());
-
-        prepareAddUserRequest(body);
+        prepareAddUserRequest(JsonOutput.toJson(newValidUserBody()));
     }
 
     @Given("que tengo un body para crear usuario con el campo {string} vacío")
-    public void queTengoUnBodyParaCrearUsuarioConElCampoVacio(String field) {
-        baseTest.setEmail("automation+" + UUID.randomUUID() + "@mail.com");
-
-        String body = buildUserBodyWithEmptyField(baseTest.getEmail(), field);
-        prepareAddUserRequest(body);
+    public void queTengoUnBodyParaCrearUsuarioConElCampoVacio(String field) throws IOException {
+        Map<String, Object> body = newValidUserBody();
+        if (!body.containsKey(field)) {
+            throw new IllegalArgumentException("Campo de usuario desconocido: %s".formatted(field));
+        }
+        body.put(field, "");
+        prepareAddUserRequest(JsonOutput.toJson(body));
     }
 
     @Given("que ya existe un usuario registrado para crear usuario")
-    public void queYaExisteUnUsuarioRegistradoParaCrearUsuario() {
-        baseTest.setEmail("automation+" + UUID.randomUUID() + "@mail.com");
-
-        String body = buildUserBody(baseTest.getEmail(), null, null);
+    public void queYaExisteUnUsuarioRegistradoParaCrearUsuario() throws IOException {
+        String body = JsonOutput.toJson(newValidUserBody());
         baseTest.setResponse(RestAssured.given().log().all()
                 .filter(new AllureRestAssured())
                 .baseUri(BASE_URL)
@@ -101,7 +94,7 @@ public class UserDefinitions {
     }
 
     private Map<String, Object> newValidUserBody() throws IOException {
-        baseTest.setEmail("automation+" + UUID.randomUUID() + "@mail.com");
+        baseTest.setEmail("automation+%s@mail.com".formatted(UUID.randomUUID()));
         return JsonPath.from(Files.readString(Path.of(CREATE_USER_BODY_PATH))
                 .replace("{{email}}", baseTest.getEmail())).getMap("$");
     }
@@ -123,41 +116,6 @@ public class UserDefinitions {
                 .header("Content-Type", "application/json")
                 .body(body)
                 .basePath("/users"));
-    }
-
-    private String buildUserBody(String email, String fieldToRemove, String emailOverride) {
-        List<String> fields = new ArrayList<>();
-
-        if (!"firstName".equals(fieldToRemove)) {
-            fields.add("\"firstName\": \"Prueba\"");
-        }
-        if (!"lastName".equals(fieldToRemove)) {
-            fields.add("\"lastName\": \"Automation\"");
-        }
-        if (!"email".equals(fieldToRemove)) {
-            fields.add("\"email\": \"" + (emailOverride != null ? emailOverride : email) + "\"");
-        }
-        if (!"password".equals(fieldToRemove)) {
-            fields.add("\"password\": \"prueba123456\"");
-        }
-
-        return "{\n  " + String.join(",\n  ", fields) + "\n}";
-    }
-
-    private String buildUserBodyWithEmptyField(String email, String emptyField) {
-        String firstName = "firstName".equals(emptyField) ? "" : "Prueba";
-        String lastName = "lastName".equals(emptyField) ? "" : "Automation";
-        String userEmail = "email".equals(emptyField) ? "" : email;
-        String password = "password".equals(emptyField) ? "" : "prueba123456";
-
-        return """
-                {
-                  "firstName": "%s",
-                  "lastName": "%s",
-                  "email": "%s",
-                  "password": "%s"
-                }
-                """.formatted(firstName, lastName, userEmail, password);
     }
 
     @When("envío la solicitud para crear el usuario")
