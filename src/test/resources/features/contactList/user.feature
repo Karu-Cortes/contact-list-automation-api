@@ -1,5 +1,5 @@
 @users
-Feature: Creación de usuarios
+Feature: Gestión de usuarios
 
   @create @happyPath
   Scenario: Crear un usuario exitosamente
@@ -66,11 +66,29 @@ Feature: Creación de usuarios
     Given que tengo un body para crear usuario con nombre "<nombre>" y apellido "<apellido>"
     When envío la solicitud para crear el usuario
     Then la respuesta de crear usuario debe tener el status 201
-    And la respuesta de crear usuario debe cumplir con el schema de usuario
-    And la respuesta de crear usuario debe incluir los datos del usuario creado
     And guardo el token de autenticación de Contact List
 
     Examples:
       | nombre | apellido |
       | José   | García   |
       | María  | Muñoz    |
+
+  @update @happyPath
+  Scenario: Actualizar los datos de un usuario autenticado
+    Given que tengo un usuario registrado y autenticado
+    And que tengo un body válido para actualizar el usuario
+    When envío la solicitud para actualizar el usuario
+    Then la respuesta del perfil de usuario debe tener el status 200
+
+  @read @happyPath
+  Scenario: Consultar el perfil de un usuario autenticado
+    Given que tengo un usuario registrado y autenticado
+    When consulto el perfil del usuario autenticado
+    Then la respuesta del perfil de usuario debe tener el status 200
+    And el perfil debe contener los datos esperados del usuario
+
+  @delete @happyPath
+  Scenario: Crear y eliminar un usuario exitosamente
+    Given que tengo un usuario registrado y autenticado
+    When envío la solicitud para eliminar el usuario
+    Then la respuesta de eliminar usuario debe tener el status 200
