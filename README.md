@@ -63,8 +63,11 @@ sonar-project-custom.properties                     | Propiedades generales de S
 
 ## Configurar proyecto:
 
-- Primero cree un archivo **.env** en la raiz del proyecto y agregue las variables de entorno necesarias para la ejecucion de los test. No olvide actualizar tambien el archivo **.env.example** con las variables de entorno necesarias pero sin sus valores.
-- Luego ejecute el comando `mvn install` para instalar las dependencias del proyecto.
+- Con Java 21 y Maven instalados, ejecute `mvn verify` desde la raiz del proyecto. Maven descarga las dependencias y ejecuta los casos; no es necesario crear un archivo `.env`.
+- La URL predeterminada es `https://thinking-tester-contact-list.herokuapp.com`, correspondiente a la [API Contact List](https://documenter.getpostman.com/view/4012288/TzK2bEa8).
+- Para usar otra URL, configure `BASE_URL_CONTACT_LIST` como variable de entorno o copie `.env.example` a `.env` en la raiz del proyecto y cambie su valor. No agregue `/users` a la URL base. La variable de entorno tiene prioridad sobre `.env`; si el valor obtenido falta o esta en blanco, se usa la URL predeterminada.
+- `.env` sigue excluido de Git para proteger configuraciones privadas. `.env.example` documenta las opciones disponibles y no debe contener secretos.
+- En IntelliJ, configure el directorio de trabajo (Working directory) en la raiz del proyecto para cargar un `.env` opcional y los archivos de los casos.
 
 ## Comandos:
 - Para ejecutar los test: `mvn verify`
@@ -78,7 +81,16 @@ sonar-project-custom.properties                     | Propiedades generales de S
 `target/allure-results` contiene los archivos JSON generados por las pruebas. El reporte visual se genera en `target/site/allure-maven-plugin/index.html`.
 Las peticiones hechas con Rest Assured se adjuntan al reporte en cada step como `Request` y `HTTP/1.1 ...`, incluyendo body, headers y respuesta de la API.
 
+## Casos de registro de usuarios
+
+`user.feature` incluye body vacío, contraseñas de 1, 6, 7 y 8 caracteres, formatos de email inválido, nombres con tildes, ñ y apóstrofes, y tipos JSON incorrectos en los cuatro campos del registro.
+
+Los escenarios `@passwordBoundary` expresan el requisito de mínimo 8 caracteres y los escenarios `@invalidTypes` esperan rechazar valores que no sean texto. En la verificación del 8 de septiembre de 2026, la API pública aceptó una contraseña de 7 caracteres, números y booleanos en `firstName`/`lastName`, y un número en `password` (HTTP 201). Estos seis casos se mantienen activos y fallan para mostrar las diferencias respecto a esas expectativas; es necesario confirmar el contrato antes de cambiarlas. El body `{}` devuelve HTTP 400 con errores de `firstName`, `lastName` y `password`.
+
+Las respuestas de creación guardan el token antes de validar el resultado, para que el hook de limpieza intente eliminar también los usuarios creados inesperadamente en casos negativos.
+
 ## Consejos y recomendaciones:
+
 - En la ruta src/test/java/co/com/bdb/automation/pojos agregue una clase POJO por cada recurso que va a probar, en esta clase agregue los atributos del cuerpo (body) y/o cabeceras (headers) que va a usar en el test.
 - En la ruta src/test/resources/features agregue una carpeta por cada recurso que va a probar, en esta carpeta agregue los archivos de definicion de los escenarios en formato Gherkin.
 - En la ruta src/test/resources/schemas agregue una carpeta por cada recurso que va a probar, en esta carpeta agregue los archivos de definicion del esquema JSON que va a validar en el test.
