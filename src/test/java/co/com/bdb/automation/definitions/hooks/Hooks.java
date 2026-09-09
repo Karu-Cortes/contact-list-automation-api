@@ -8,7 +8,7 @@ import io.restassured.RestAssured;
 
 public class Hooks {
 
-    private static final String BASE_URL = new EnvironmentValuesTask().getenv("BASE_URL_CONTACT_LIST");
+    private static final String BASE_URL = new EnvironmentValuesTask().getContactListBaseUrl();
 
     private final BaseTest baseTest;
 

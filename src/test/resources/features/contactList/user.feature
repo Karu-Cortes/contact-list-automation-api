@@ -32,8 +32,45 @@ Feature: Creación de usuarios
     And la respuesta de error debe contener el mensaje "Email address is already in use"
 
   @create @negative
-  Scenario: Crear usuario con email inválido
-    Given que tengo un body para crear usuario con email inválido
+  Scenario Outline: Crear usuario con email inválido: <email>
+    Given que tengo un body para crear usuario con email inválido "<email>"
     When envío la solicitud para crear el usuario
     Then la respuesta de crear usuario debe tener el status 400
-    And la respuesta de error debe contener el mensaje "Email is invalid"
+    And la respuesta de error debe contener el mensaje "<mensaje>"
+
+    Examples:
+      | email              | mensaje          |
+      | invalid-email      | Email is invalid |
+      | correocorreo.com   | Email is invalid |
+      | correo@            | Email is invalid |
+      | correo @correo.com | Email is invalid |
+      | correo@correo .com | Email is invalid |
+
+
+  @create @negative
+  Scenario Outline: Crear usuario con contraseña por debajo de 7 caracteres: <longitud>
+    Given que tengo un body para crear usuario con contraseña "<password>"
+    When envío la solicitud para crear el usuario
+    Then la respuesta de crear usuario debe tener el status 400
+    And la respuesta de error debe contener el mensaje "<mensaje>"
+
+    Examples:
+      | longitud | password | mensaje                                              |
+      | 1        | a        | is shorter than the minimum allowed length (7).      |
+      | 6        | Abc123   | is shorter than the minimum allowed length (7).      |
+      | 5        | c123/    | is shorter than the minimum allowed length (7).      |
+
+
+  @create @happyPath
+  Scenario Outline: Crear usuario con caracteres especiales en nombre y apellido
+    Given que tengo un body para crear usuario con nombre "<nombre>" y apellido "<apellido>"
+    When envío la solicitud para crear el usuario
+    Then la respuesta de crear usuario debe tener el status 201
+    And la respuesta de crear usuario debe cumplir con el schema de usuario
+    And la respuesta de crear usuario debe incluir los datos del usuario creado
+    And guardo el token de autenticación de Contact List
+
+    Examples:
+      | nombre | apellido |
+      | José   | García   |
+      | María  | Muñoz    |
