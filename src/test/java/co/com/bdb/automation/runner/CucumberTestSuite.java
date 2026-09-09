@@ -8,7 +8,7 @@ import org.junit.platform.suite.api.Suite;
 
 @Suite
 @IncludeEngines("cucumber")
-@SelectClasspathResource("co.com.bdb.automation")
 @SelectClasspathResource("features/contactList")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "co.com.bdb.automation")
-public class CucumberTestSuite { }
+public class CucumberTestSuite {
+}

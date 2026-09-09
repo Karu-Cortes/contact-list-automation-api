@@ -1,15 +1,11 @@
 package co.com.bdb.automation.definitions;
 
-import co.com.bdb.automation.utilities.EnvironmentValuesTask;
+import co.com.bdb.automation.utilities.ContactListApi;
 import groovy.json.JsonOutput;
-import io.cucumber.java.Before;
-import io.cucumber.java.Scenario;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.qameta.allure.restassured.AllureRestAssured;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.specification.RequestSpecification;
 import org.slf4j.Logger;
@@ -29,9 +25,6 @@ import static org.hamcrest.Matchers.notNullValue;
 public class UserDefinitions {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserDefinitions.class);
-    private Scenario scenario;
-
-    private static final String BASE_URL = new EnvironmentValuesTask().getContactListBaseUrl();
     private static final String CREATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/createUser.json";
     private static final String UPDATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/updateUser.json";
 
@@ -42,11 +35,6 @@ public class UserDefinitions {
 
     public UserDefinitions(BaseTest baseTest) {
         this.baseTest = baseTest;
-    }
-
-    @Before("@delete")
-    public void guardarEscenarioParaElLog(Scenario scenario) {
-        this.scenario = scenario;
     }
 
     @Given("que tengo un body válido para crear usuario")
@@ -105,16 +93,9 @@ public class UserDefinitions {
         baseTest.getResponse().then().body("message", containsString(expectedMessage));
     }
 
-    // Configuración de peticiones
-    private RequestSpecification userRequest() {
-        return RestAssured.given()
-                .filter(new AllureRestAssured())
-                .baseUri(BASE_URL)
-                .contentType("application/json");
-    }
-
     private void createUser() {
-        baseTest.setResponse(userRequest().body(JsonOutput.toJson(body)).post("/users"));
+        baseTest.setResponse(ContactListApi.request()
+                .body(JsonOutput.toJson(body)).post(ContactListApi.USERS_PATH));
         if (baseTest.getResponse().statusCode() == 201) {
             guardoElTokenDeAutenticacionDeContactList();
         }
@@ -167,36 +148,33 @@ public class UserDefinitions {
     }
 
     private RequestSpecification authenticatedProfileRequest() {
-        return userRequest()
-                .header("Authorization", "Bearer %s".formatted(baseTest.getToken()));
+        return ContactListApi.authenticatedRequest(baseTest.getToken());
     }
 
     @When("envío la solicitud para actualizar el usuario")
     public void envioLaSolicitudParaActualizarElUsuario() {
         baseTest.setResponse(authenticatedProfileRequest()
-                .body(JsonOutput.toJson(body)).patch("/users/me"));
+                .body(JsonOutput.toJson(body)).patch(ContactListApi.PROFILE_PATH));
     }
 
     @When("consulto el perfil del usuario autenticado")
     public void consultoElPerfilDelUsuarioAutenticado() {
-        baseTest.setResponse(authenticatedProfileRequest().get("/users/me"));
+        baseTest.setResponse(authenticatedProfileRequest().get(ContactListApi.PROFILE_PATH));
     }
 
     @When("envío la solicitud para eliminar el usuario")
     public void envioLaSolicitudParaEliminarElUsuario() {
-        baseTest.setResponse(authenticatedProfileRequest().delete("/users/me"));
+        baseTest.setResponse(authenticatedProfileRequest().delete(ContactListApi.PROFILE_PATH));
     }
 
     @Then("la respuesta de eliminar usuario debe tener el status 200")
     public void laRespuestaDeEliminarUsuarioDebeTenerElStatus200() {
         baseTest.getResponse().then().log().ifValidationFails().statusCode(200);
 
-        // Registrar el éxito solo después de validar la respuesta del DELETE.
         String message = "Usuario eliminado correctamente. ID: %s, email: %s. DELETE: 200."
                 .formatted(baseTest.getUserId(), baseTest.getEmail());
-        scenario.log(message);
+        baseTest.getScenario().log(message);
         LOGGER.info(message);
-        // El hook de limpieza ya no necesita eliminar este usuario.
         baseTest.setToken(null);
     }
 
@@ -214,7 +192,7 @@ public class UserDefinitions {
                 .body("email", equalTo(baseTest.getEmail()));
     }
 
-    //guarda los datos que se esperan de la API.
+    // Guarda los datos que se esperan de la API.
     private Map<String, Object> readUserBody(String path) throws IOException {
         String email = "automation+%s@mail.com".formatted(UUID.randomUUID());
         String json = Files.readString(Path.of(path)).replace("{{email}}", email);
