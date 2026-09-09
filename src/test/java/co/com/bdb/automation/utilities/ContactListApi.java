@@ -12,6 +12,7 @@ import java.util.Map;
 public final class ContactListApi {
 
     public static final String USERS_PATH = "/users";
+    public static final String CONTACTS_PATH = "/contacts";
     public static final String PROFILE_PATH = "/users/me";
     private static final String BASE_URL = new EnvironmentValuesTask().getContactListBaseUrl();
 
