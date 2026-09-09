@@ -2,6 +2,8 @@ package co.com.bdb.automation.definitions;
 
 import co.com.bdb.automation.utilities.EnvironmentValuesTask;
 import groovy.json.JsonOutput;
+import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -10,6 +12,8 @@ import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.specification.RequestSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +28,9 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class UserDefinitions {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserDefinitions.class);
+    private Scenario scenario;
+
     private static final String BASE_URL = new EnvironmentValuesTask().getContactListBaseUrl();
     private static final String CREATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/createUser.json";
     private static final String UPDATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/updateUser.json";
@@ -35,6 +42,11 @@ public class UserDefinitions {
 
     public UserDefinitions(BaseTest baseTest) {
         this.baseTest = baseTest;
+    }
+
+    @Before("@delete")
+    public void guardarEscenarioParaElLog(Scenario scenario) {
+        this.scenario = scenario;
     }
 
     @Given("que tengo un body válido para crear usuario")
@@ -168,6 +180,24 @@ public class UserDefinitions {
     @When("consulto el perfil del usuario autenticado")
     public void consultoElPerfilDelUsuarioAutenticado() {
         baseTest.setResponse(authenticatedProfileRequest().get("/users/me"));
+    }
+
+    @When("envío la solicitud para eliminar el usuario")
+    public void envioLaSolicitudParaEliminarElUsuario() {
+        baseTest.setResponse(authenticatedProfileRequest().delete("/users/me"));
+    }
+
+    @Then("la respuesta de eliminar usuario debe tener el status 200")
+    public void laRespuestaDeEliminarUsuarioDebeTenerElStatus200() {
+        baseTest.getResponse().then().log().ifValidationFails().statusCode(200);
+
+        // Registrar el éxito solo después de validar la respuesta del DELETE.
+        String message = "Usuario eliminado correctamente. ID: %s, email: %s. DELETE: 200."
+                .formatted(baseTest.getUserId(), baseTest.getEmail());
+        scenario.log(message);
+        LOGGER.info(message);
+        // El hook de limpieza ya no necesita eliminar este usuario.
+        baseTest.setToken(null);
     }
 
     @Then("la respuesta del perfil de usuario debe tener el status {int}")

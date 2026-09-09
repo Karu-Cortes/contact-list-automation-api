@@ -80,9 +80,15 @@ Feature: Gestión de usuarios
     When envío la solicitud para actualizar el usuario
     Then la respuesta del perfil de usuario debe tener el status 200
 
-  @profile @happyPath
+  @read @happyPath
   Scenario: Consultar el perfil de un usuario autenticado
     Given que tengo un usuario registrado y autenticado
     When consulto el perfil del usuario autenticado
     Then la respuesta del perfil de usuario debe tener el status 200
     And el perfil debe contener los datos esperados del usuario
+
+  @delete @happyPath
+  Scenario: Crear y eliminar un usuario exitosamente
+    Given que tengo un usuario registrado y autenticado
+    When envío la solicitud para eliminar el usuario
+    Then la respuesta de eliminar usuario debe tener el status 200
