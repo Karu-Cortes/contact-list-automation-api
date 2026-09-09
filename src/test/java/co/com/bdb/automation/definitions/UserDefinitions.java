@@ -1,6 +1,5 @@
 package co.com.bdb.automation.definitions;
 
-import co.com.bdb.automation.utilities.CustomRequestSpecification;
 import co.com.bdb.automation.utilities.EnvironmentValuesTask;
 import groovy.json.JsonOutput;
 import io.cucumber.java.en.And;
@@ -10,6 +9,7 @@ import io.cucumber.java.en.When;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
+import io.restassured.specification.RequestSpecification;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,9 +26,10 @@ public class UserDefinitions {
 
     private static final String BASE_URL = new EnvironmentValuesTask().getContactListBaseUrl();
     private static final String CREATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/createUser.json";
+    private static final String UPDATE_USER_BODY_PATH = "src/test/resources/bodies/contactList/updateUser.json";
 
     private final BaseTest baseTest;
-    private CustomRequestSpecification request;
+    private Map<String, Object> body;
     private String expectedFirstName = "Prueba";
     private String expectedLastName = "Automation";
 
@@ -38,70 +39,53 @@ public class UserDefinitions {
 
     @Given("que tengo un body válido para crear usuario")
     public void queTengoUnBodyValidoParaCrearUsuario() throws IOException {
-        prepareAddUserRequest(JsonOutput.toJson(newValidUserBody()));
+        body = newValidUserBody();
     }
 
     @Given("que tengo un body para crear usuario con el campo {string} vacío")
     public void queTengoUnBodyParaCrearUsuarioConElCampoVacio(String field) throws IOException {
-        Map<String, Object> body = newValidUserBody();
+        body = newValidUserBody();
         if (!body.containsKey(field)) {
             throw new IllegalArgumentException("Campo de usuario desconocido: %s".formatted(field));
         }
         body.put(field, "");
-        prepareAddUserRequest(JsonOutput.toJson(body));
     }
 
     @Given("que ya existe un usuario registrado para crear usuario")
     public void queYaExisteUnUsuarioRegistradoParaCrearUsuario() throws IOException {
-        String body = JsonOutput.toJson(newValidUserBody());
-        baseTest.setResponse(RestAssured.given().log().all()
-                .filter(new AllureRestAssured())
-                .baseUri(BASE_URL)
-                .header("Content-Type", "application/json")
-                .body(body)
-                .when()
-                .post("/users"));
-
-        baseTest.getResponse().then().statusCode(201);
-        baseTest.setToken(baseTest.getResponse().path("token"));
-        baseTest.setUserId(baseTest.getResponse().path("user._id"));
-        prepareAddUserRequest(body);
+        createRegisteredUser();
     }
 
     @Given("que tengo un body para crear usuario con email inválido {string}")
     public void queTengoUnBodyParaCrearUsuarioConEmailInvalido(String email) throws IOException {
-        Map<String, Object> body = newValidUserBody();
+        body = newValidUserBody();
         body.put("email", email);
-        prepareAddUserRequest(JsonOutput.toJson(body));
     }
 
     @Given("que tengo un body para crear usuario con contraseña {string}")
     public void queTengoUnBodyParaCrearUsuarioConContrasena(String password) throws IOException {
-        Map<String, Object> body = newValidUserBody();
+        body = newValidUserBody();
         body.put("password", password);
-        prepareAddUserRequest(JsonOutput.toJson(body));
     }
 
     @Given("que tengo un body para crear usuario con nombre {string} y apellido {string}")
     public void queTengoUnBodyParaCrearUsuarioConNombreYApellido(String firstName, String lastName)
             throws IOException {
-        Map<String, Object> body = newValidUserBody();
+        body = newValidUserBody();
         expectedFirstName = firstName;
         expectedLastName = lastName;
         body.put("firstName", firstName);
         body.put("lastName", lastName);
-        prepareAddUserRequest(JsonOutput.toJson(body));
     }
 
     private Map<String, Object> newValidUserBody() throws IOException {
-        baseTest.setEmail("automation+%s@mail.com".formatted(UUID.randomUUID()));
-        return JsonPath.from(Files.readString(Path.of(CREATE_USER_BODY_PATH))
-                .replace("{{email}}", baseTest.getEmail())).getMap("$");
+        return readUserBody(CREATE_USER_BODY_PATH);
     }
 
+    @When("envío la solicitud para crear el usuario")
     @When("envío la solicitud para crear el usuario con el mismo email")
-    public void envioLaSolicitudParaCrearElUsuarioConElMismoEmail() {
-        baseTest.setResponse(request.when().post());
+    public void envioLaSolicitudParaCrearElUsuario() {
+        createUser();
     }
 
     @And("la respuesta de error debe contener el mensaje {string}")
@@ -109,19 +93,16 @@ public class UserDefinitions {
         baseTest.getResponse().then().body("message", containsString(expectedMessage));
     }
 
-    private void prepareAddUserRequest(String body) {
-        request = new CustomRequestSpecification(RestAssured.given().log().all()
+    // Configuración de peticiones
+    private RequestSpecification userRequest() {
+        return RestAssured.given()
                 .filter(new AllureRestAssured())
                 .baseUri(BASE_URL)
-                .header("Content-Type", "application/json")
-                .body(body)
-                .basePath("/users"));
+                .contentType("application/json");
     }
 
-    @When("envío la solicitud para crear el usuario")
-    public void envioLaSolicitudParaCrearElUsuario() {
-        baseTest.setResponse(request.when().post());
-        // Guardar antes de las aserciones permite limpiar incluso un registro inesperado.
+    private void createUser() {
+        baseTest.setResponse(userRequest().body(JsonOutput.toJson(body)).post("/users"));
         if (baseTest.getResponse().statusCode() == 201) {
             guardoElTokenDeAutenticacionDeContactList();
         }
@@ -153,5 +134,64 @@ public class UserDefinitions {
     public void guardoElTokenDeAutenticacionDeContactList() {
         baseTest.setToken(baseTest.getResponse().path("token"));
         baseTest.setUserId(baseTest.getResponse().path("user._id"));
+    }
+
+    @Given("que tengo un usuario registrado y autenticado")
+    public void queTengoUnUsuarioRegistradoYAutenticado() throws IOException {
+        createRegisteredUser();
+    }
+
+    private void createRegisteredUser() throws IOException {
+        body = newValidUserBody();
+        createUser();
+        baseTest.getResponse().then().statusCode(201)
+                .body("token", notNullValue())
+                .body("user._id", notNullValue());
+    }
+
+    @Given("que tengo un body válido para actualizar el usuario")
+    public void queTengoUnBodyValidoParaActualizarElUsuario() throws IOException {
+        body = readUserBody(UPDATE_USER_BODY_PATH);
+    }
+
+    private RequestSpecification authenticatedProfileRequest() {
+        return userRequest()
+                .header("Authorization", "Bearer %s".formatted(baseTest.getToken()));
+    }
+
+    @When("envío la solicitud para actualizar el usuario")
+    public void envioLaSolicitudParaActualizarElUsuario() {
+        baseTest.setResponse(authenticatedProfileRequest()
+                .body(JsonOutput.toJson(body)).patch("/users/me"));
+    }
+
+    @When("consulto el perfil del usuario autenticado")
+    public void consultoElPerfilDelUsuarioAutenticado() {
+        baseTest.setResponse(authenticatedProfileRequest().get("/users/me"));
+    }
+
+    @Then("la respuesta del perfil de usuario debe tener el status {int}")
+    public void laRespuestaDelPerfilDeUsuarioDebeTenerElStatus(int status) {
+        baseTest.getResponse().then().log().ifValidationFails().statusCode(status);
+    }
+
+    @And("el perfil debe contener los datos esperados del usuario")
+    public void elPerfilDebeContenerLosDatosEsperadosDelUsuario() {
+        baseTest.getResponse().then()
+                .body("_id", equalTo(baseTest.getUserId()))
+                .body("firstName", equalTo(expectedFirstName))
+                .body("lastName", equalTo(expectedLastName))
+                .body("email", equalTo(baseTest.getEmail()));
+    }
+
+    //guarda los datos que se esperan de la API.
+    private Map<String, Object> readUserBody(String path) throws IOException {
+        String email = "automation+%s@mail.com".formatted(UUID.randomUUID());
+        String json = Files.readString(Path.of(path)).replace("{{email}}", email);
+        Map<String, Object> userBody = JsonPath.from(json).getMap("$");
+        baseTest.setEmail(email);
+        expectedFirstName = (String) userBody.get("firstName");
+        expectedLastName = (String) userBody.get("lastName");
+        return userBody;
     }
 }
