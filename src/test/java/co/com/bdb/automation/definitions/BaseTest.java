@@ -7,6 +7,7 @@ public class BaseTest {
     private Response response;
     private String token;
     private String userId;
+    private String contactId;
     private String email;
     private String password;
     private Scenario scenario;
@@ -33,6 +34,14 @@ public class BaseTest {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getContactId() {
+        return contactId;
+    }
+
+    public void setContactId(String contactId) {
+        this.contactId = contactId;
     }
 
     public String getEmail() {
