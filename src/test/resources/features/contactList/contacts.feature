@@ -6,7 +6,7 @@ Feature: Gestión de contactos en Contact List
     When inicio sesión con las credenciales correctas
     Then la respuesta de autenticación debe tener el status 200
 
-  @create @happyPath
+  @TC_031 @create @happyPath
   Scenario: Crear contacto
     Given que tengo un body válido para crear un contacto
     When creo el contacto
@@ -16,7 +16,7 @@ Feature: Gestión de contactos en Contact List
     Then la respuesta de contactos debe tener el status 200
     And el contacto debe contener los datos enviados
 
-  @update @happyPath
+  @TC_032 @update @happyPath
   Scenario: Actualizar contacto
     Given que tengo un contacto registrado
     And que tengo un body para actualizar el contacto completo
@@ -27,7 +27,7 @@ Feature: Gestión de contactos en Contact List
     Then la respuesta de contactos debe tener el status 200
     And el contacto debe contener los datos enviados
 
-  @partialUpdate @happyPath
+  @TC_033 @partialUpdate @happyPath
   Scenario: Actualizar parcialmente el contacto
     Given que tengo un contacto registrado
     And que tengo un body para actualizar solo el teléfono del contacto
@@ -38,7 +38,7 @@ Feature: Gestión de contactos en Contact List
     Then la respuesta de contactos debe tener el status 200
     And el contacto debe contener los datos enviados
 
-  @delete @happyPath
+  @TC_034 @delete @happyPath
   Scenario: Eliminar contacto
     Given que tengo un contacto registrado
     When elimino el contacto creado
