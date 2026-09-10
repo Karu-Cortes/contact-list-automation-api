@@ -1,7 +1,7 @@
 @users
 Feature: Gestión de usuarios
 
-  @create @happyPath
+  @TC_018 @create @happyPath
   Scenario: Crear un usuario exitosamente
     Given que tengo un body válido para crear usuario
     When envío la solicitud para crear el usuario
@@ -10,7 +10,7 @@ Feature: Gestión de usuarios
     And la respuesta de crear usuario debe incluir los datos del usuario creado
     And guardo el token de autenticación de Contact List
 
-  @create @negative
+  @TC_019 @create @negative
   Scenario Outline: Crear usuario con campos obligatorios vacíos
     Given que tengo un body para crear usuario con el campo "<campo>" vacío
     When envío la solicitud para crear el usuario
@@ -24,14 +24,14 @@ Feature: Gestión de usuarios
       | email     | Email is invalid              |
       | password  | Path `password` is required.  |
 
-  @create @negative
+  @TC_020 @create @negative
   Scenario: Crear usuario con email repetido
     Given que ya existe un usuario registrado para crear usuario
     When envío la solicitud para crear el usuario con el mismo email
     Then la respuesta de crear usuario debe tener el status 400
     And la respuesta de error debe contener el mensaje "Email address is already in use"
 
-  @create @negative
+  @TC_021 @create @negative
   Scenario Outline: Crear usuario con email inválido: <email>
     Given que tengo un body para crear usuario con email inválido "<email>"
     When envío la solicitud para crear el usuario
@@ -47,7 +47,7 @@ Feature: Gestión de usuarios
       | correo@correo .com | Email is invalid |
 
 
-  @create @negative
+  @TC_022 @create @negative
   Scenario Outline: Crear usuario con contraseña por debajo de 7 caracteres: <longitud>
     Given que tengo un body para crear usuario con contraseña "<password>"
     When envío la solicitud para crear el usuario
@@ -61,7 +61,7 @@ Feature: Gestión de usuarios
       | 5        | c123/    | is shorter than the minimum allowed length (7).      |
 
 
-  @create @happyPath
+  @TC_023 @create @happyPath
   Scenario Outline: Crear usuario con caracteres especiales en nombre y apellido
     Given que tengo un body para crear usuario con nombre "<nombre>" y apellido "<apellido>"
     When envío la solicitud para crear el usuario
@@ -73,21 +73,21 @@ Feature: Gestión de usuarios
       | José   | García   |
       | María  | Muñoz    |
 
-  @update @happyPath
+  @TC_025 @update @happyPath
   Scenario: Actualizar los datos de un usuario autenticado
     Given que tengo un usuario registrado y autenticado
     And que tengo un body válido para actualizar el usuario
     When envío la solicitud para actualizar el usuario
     Then la respuesta del perfil de usuario debe tener el status 200
 
-  @read @happyPath
+  @TC_026 @read @happyPath
   Scenario: Consultar el perfil de un usuario autenticado
     Given que tengo un usuario registrado y autenticado
     When consulto el perfil del usuario autenticado
     Then la respuesta del perfil de usuario debe tener el status 200
     And el perfil debe contener los datos esperados del usuario
 
-  @delete @happyPath
+  @TC_027 @delete @happyPath
   Scenario: Crear y eliminar un usuario exitosamente
     Given que tengo un usuario registrado y autenticado
     When envío la solicitud para eliminar el usuario
